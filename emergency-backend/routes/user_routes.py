@@ -188,3 +188,73 @@ def my_request():
         return jsonify({'request': out}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@user_bp.route('/cancel-request/<request_id>', methods=['POST'])
+@jwt_required()
+@role_required('user')
+def cancel_request(request_id):
+    """
+    Cancel an active emergency request.
+    - Only the requesting user can cancel their own request.
+    - Cancellable only if status is 'pending' or 'assigned'.
+    - Frees the ambulance back to 'active'.
+    - Increments cancel_count; every 3rd cancellation adds 1 demerit point.
+    """
+    try:
+        user_id = get_jwt_identity()
+
+        # Validate ObjectId
+        try:
+            ObjectId(request_id)
+        except Exception:
+            return jsonify({'error': 'Invalid request ID'}), 400
+
+        req = RequestModel.find_by_id(user_bp.db, request_id)
+        if not req:
+            return jsonify({'error': 'Request not found'}), 404
+
+        # Only the owner can cancel
+        if str(req.get('user_id')) != user_id:
+            return jsonify({'error': 'Unauthorized'}), 403
+
+        # Only cancellable if still active
+        if req.get('status') not in ('pending', 'assigned'):
+            return jsonify({'error': f"Cannot cancel a request with status '{req.get('status')}'"}), 400
+
+        # Cancel the request
+        RequestModel.cancel_request(user_bp.db, request_id)
+
+        # Free the ambulance back to active (if one was assigned)
+        if req.get('assigned_ambulance_id'):
+            try:
+                AmbulanceModel.update_status(user_bp.db, str(req['assigned_ambulance_id']), 'active')
+            except Exception:
+                pass  # Non-blocking
+
+        # Increment cancel count and optionally award demerit
+        new_count, demerit_added, updated_user = UserModel.increment_cancel_count(user_bp.db, user_id)
+
+        # Build response
+        remaining_before_demerit = 3 - (new_count % 3) if new_count % 3 != 0 else 3
+        response = {
+            'message': 'Request cancelled successfully.',
+            'cancel_count': new_count,
+            'remaining_before_demerit': remaining_before_demerit,
+            'demerit_added': demerit_added,
+        }
+        if demerit_added and updated_user:
+            response['demerit_points'] = updated_user.get('demerit_points', 0)
+            response['is_blacklisted'] = updated_user.get('is_blacklisted', False)
+            response['warning'] = (
+                f"⚠️ You have been given a demerit point for excessive cancellations "
+                f"({new_count} total). You now have {updated_user.get('demerit_points', 0)} demerit point(s)."
+            )
+        else:
+            response['info'] = (
+                f"You have cancelled {new_count} time(s). "
+                f"{remaining_before_demerit} more cancellation(s) will result in a demerit point."
+            )
+        return jsonify(response), 200
+    except Exception as e:
+        return jsonify({'error': f'Failed to cancel request: {str(e)}'}), 500
+

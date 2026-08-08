@@ -7,3 +7,5 @@ export const updateProfile = (data) => api.post('/user/update-profile', data);
 export const updateLocation = (lat, lng) => api.post('/user/update-location', { lat, lng });
 export const requestEmergency = (lat, lng, ambulanceType = 'any') => api.post('/user/request-emergency', { lat, lng, ambulance_type: ambulanceType });
 export const getMyRequest = () => api.get('/user/my-request');
+export const cancelRequest = (requestId) => api.post(`/user/cancel-request/${requestId}`);
+

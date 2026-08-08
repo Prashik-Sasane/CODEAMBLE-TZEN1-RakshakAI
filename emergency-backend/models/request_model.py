@@ -73,7 +73,17 @@ class RequestModel:
         """Mark request as fake and return the request."""
         db.requests.update_one(
             {'_id': ObjectId(request_id)},
-            {'$set': {'status': 'fake', 'is_fake': True}}
+            {'$set': {'status': 'fake', 'is_fake': True, 'updated_at': get_ist_now_naive()}}
+        )
+        return db.requests.find_one({'_id': ObjectId(request_id)})
+
+    @staticmethod
+    def cancel_request(db, request_id):
+        """Cancel a pending/assigned request by the user."""
+        now = get_ist_now_naive()
+        db.requests.update_one(
+            {'_id': ObjectId(request_id)},
+            {'$set': {'status': 'cancelled', 'updated_at': now}}
         )
         return db.requests.find_one({'_id': ObjectId(request_id)})
 

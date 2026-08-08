@@ -16,6 +16,7 @@ class UserModel:
             'location_updated_at': None,
             'demerit_points': 0,
             'is_blacklisted': False,
+            'cancel_count': 0,
             'accident_detection_enabled': False,
             'profile_completed': False,  # Track if profile is completed
             'created_at': get_ist_now_naive()
@@ -54,6 +55,26 @@ class UserModel:
             }}
         )
         return db.users.find_one({'_id': ObjectId(user_id)})
+
+    @staticmethod
+    def increment_cancel_count(db, user_id):
+        """
+        Increment cancellation counter for this user.
+        Every 3rd cancellation awards 1 demerit point.
+        Returns (new_cancel_count, demerit_added, updated_user).
+        """
+        user = db.users.find_one({'_id': ObjectId(user_id)})
+        if not user:
+            return 0, False, None
+        current_count = user.get('cancel_count', 0)
+        new_count = current_count + 1
+        demerit_added = (new_count % 3 == 0)  # demerit every 3 cancellations
+        update = {'cancel_count': new_count}
+        db.users.update_one({'_id': ObjectId(user_id)}, {'$set': update})
+        updated_user = db.users.find_one({'_id': ObjectId(user_id)})
+        if demerit_added:
+            updated_user = UserModel.add_demerit_point(db, user_id)
+        return new_count, demerit_added, updated_user
 
     @staticmethod
     def add_demerit_point(db, user_id):
