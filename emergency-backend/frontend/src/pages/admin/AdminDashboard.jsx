@@ -52,16 +52,112 @@ function Toast({ message, type = 'info', onClose }) {
   );
 }
 
+/* ── history record card ──────────────────────────────── */
+function HistoryCard({ record }) {
+  const isFake = record.status === 'fake';
+  const isCompleted = record.status === 'completed';
+
+  const borderColor = isFake ? '#dc2626' : '#059669';
+  const bgColor = isFake ? '#fff5f5' : '#f0fdf4';
+  const badgeStyle = {
+    display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+    padding: '0.25rem 0.75rem', borderRadius: 20, fontWeight: 700, fontSize: '0.8rem',
+    background: isFake ? '#fee2e2' : '#dcfce7',
+    color: isFake ? '#dc2626' : '#059669',
+    border: `1px solid ${borderColor}`,
+  };
+
+  const formatDate = (iso) => {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  };
+
+  return (
+    <div style={{
+      border: `1px solid ${borderColor}`,
+      borderLeft: `5px solid ${borderColor}`,
+      borderRadius: 12,
+      padding: '1rem 1.25rem',
+      marginBottom: '0.75rem',
+      background: bgColor,
+      boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.6rem' }}>
+        <span style={badgeStyle}>
+          {isFake ? '🚫 Fake Request' : '✅ Completed Service'}
+        </span>
+        <span style={{ fontSize: '0.78rem', color: '#718096' }}>
+          {formatDate(record.updated_at || record.created_at)}
+        </span>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem 1rem', fontSize: '0.87rem' }}>
+        {record.location && (
+          <div>
+            <span style={{ color: '#718096' }}>📍 Incident:</span>{' '}
+            <strong>{record.location.lat?.toFixed(4)}, {record.location.lng?.toFixed(4)}</strong>
+          </div>
+        )}
+        {record.selected_hospital && (
+          <div>
+            <span style={{ color: '#718096' }}>🏥 Hospital:</span>{' '}
+            <strong>{record.selected_hospital.name}</strong>
+          </div>
+        )}
+        {record.ambulance && (
+          <>
+            <div>
+              <span style={{ color: '#718096' }}>🚑 Vehicle:</span>{' '}
+              <strong>{record.ambulance.vehicle_number || '—'}</strong>
+            </div>
+            <div>
+              <span style={{ color: '#718096' }}>👤 Driver:</span>{' '}
+              <strong>{record.ambulance.name || '—'}</strong>
+            </div>
+            <div>
+              <span style={{ color: '#718096' }}>📞 Amb. Phone:</span>{' '}
+              <a href={`tel:${record.ambulance.phone}`}><strong>{record.ambulance.phone}</strong></a>
+            </div>
+          </>
+        )}
+        {record.user && (
+          <>
+            <div>
+              <span style={{ color: '#718096' }}>👤 User:</span>{' '}
+              <strong>{record.user.name || '—'}</strong>
+            </div>
+            <div>
+              <span style={{ color: '#718096' }}>📞 User Phone:</span>{' '}
+              <strong>{record.user.phone || '—'}</strong>
+            </div>
+            {isFake && record.user.demerit_points > 0 && (
+              <div style={{ gridColumn: '1/-1' }}>
+                <span style={{ color: '#dc2626', fontWeight: 700 }}>
+                  ⚠️ User demerit points: {record.user.demerit_points}
+                  {record.user.demerit_points >= 3 ? ' — BLACKLISTED' : ''}
+                </span>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ── main component ───────────────────────────────────── */
 export default function AdminDashboard() {
   const { logout } = useAuth();
   const [requests, setRequests] = useState([]);
   const [users, setUsers] = useState([]);
   const [ambulances, setAmbulances] = useState([]);
+  const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [tab, setTab] = useState('map');
+  const [tab, setTab] = useState('live');
   const [toast, setToast] = useState(null);
+  const [historyFilter, setHistoryFilter] = useState('all'); // 'all' | 'completed' | 'fake'
 
   // location state
   const [adminLocation, setAdminLocation] = useState(null);
@@ -79,15 +175,16 @@ export default function AdminDashboard() {
 
   const fetchAll = useCallback(async () => {
     try {
-      const [mapRes, usersRes, ambRes] = await Promise.all([
+      const [mapRes, usersRes, ambRes, histRes] = await Promise.all([
         adminApi.getDashboardMap(),
         adminApi.getAllUsers(),
         adminApi.getAllAmbulances(),
+        adminApi.getHistory(),
       ]);
       const newRequests = mapRes.data.requests || [];
       const newAmbulances = ambRes.data.ambulances || [];
 
-      // Detect NEW requests
+      // Detect NEW active requests (not fake/completed)
       const newIds = new Set(newRequests.map(r => r.id));
       if (prevRequestIds.current.size > 0) {
         newRequests.forEach(r => {
@@ -111,6 +208,7 @@ export default function AdminDashboard() {
       setRequests(newRequests);
       setUsers(usersRes.data.users || []);
       setAmbulances(newAmbulances);
+      setHistory(histRes.data.history || []);
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to load data');
     } finally {
@@ -146,8 +244,16 @@ export default function AdminDashboard() {
     );
   };
 
+  // Only truly active (pending/assigned/to_hospital) – fake/completed excluded by backend map API
   const activeRequests = requests.filter(r => ['pending', 'assigned', 'to_hospital'].includes(r.status));
-  const completedRequests = requests.filter(r => r.status === 'completed' || r.status === 'fake');
+
+  // History filter
+  const filteredHistory = historyFilter === 'all'
+    ? history
+    : history.filter(h => h.status === historyFilter);
+
+  const completedCount = history.filter(h => h.status === 'completed').length;
+  const fakeCount = history.filter(h => h.status === 'fake').length;
 
   if (loading) return <div className="page"><div className="loading">Loading…</div></div>;
   if (error) return <div className="page"><div className="alert alert-error">{error}</div></div>;
@@ -167,6 +273,21 @@ export default function AdminDashboard() {
           <button className={`btn btn-tab ${tab === 'map' ? 'btn-tab--active' : ''}`} onClick={() => setTab('map')}>🗺 Map</button>
           <button className={`btn btn-tab ${tab === 'live' ? 'btn-tab--active' : ''}`} onClick={() => setTab('live')}>🔴 Live</button>
           <button className={`btn btn-tab ${tab === 'list' ? 'btn-tab--active' : ''}`} onClick={() => setTab('list')}>📋 List</button>
+          <button
+            className={`btn btn-tab ${tab === 'history' ? 'btn-tab--active' : ''}`}
+            onClick={() => setTab('history')}
+            style={{ position: 'relative' }}
+          >
+            📁 History
+            {history.length > 0 && (
+              <span style={{
+                position: 'absolute', top: -6, right: -6,
+                background: '#4f46e5', color: 'white',
+                borderRadius: '50%', fontSize: '0.65rem', width: 18, height: 18,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700,
+              }}>{history.length}</span>
+            )}
+          </button>
           <button className="btn btn-ghost" onClick={logout}>Logout</button>
         </div>
       </header>
@@ -213,6 +334,9 @@ export default function AdminDashboard() {
       {tab === 'map' && (
         <section className="card">
           <h2 className="card-title">🗺 Live Map</h2>
+          <p style={{ fontSize: '0.82rem', color: '#718096', marginBottom: '0.5rem' }}>
+            Only active emergencies are shown. Fake and completed requests are excluded from the map.
+          </p>
           <AdminMapView requests={requests} height={480} expandable />
         </section>
       )}
@@ -263,10 +387,10 @@ export default function AdminDashboard() {
       {tab === 'list' && (
         <>
           <section className="card">
-            <h2 className="card-title">📋 All Requests ({requests.length})</h2>
-            {requests.length === 0 && <p className="card-desc">No requests</p>}
+            <h2 className="card-title">📋 Active Requests ({activeRequests.length})</h2>
+            {activeRequests.length === 0 && <p className="card-desc">No active requests</p>}
             <div className="list-items">
-              {requests.slice(0, 20).map((r) => (
+              {activeRequests.map((r) => (
                 <div key={r.id} className="list-item list-item--request">
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span className={`badge badge-${r.status}`}>{r.status === 'to_hospital' ? 'To Hospital' : r.status}</span>
@@ -306,6 +430,66 @@ export default function AdminDashboard() {
             </div>
           </section>
         </>
+      )}
+
+      {/* ── History Tab ───────────────────────────────────── */}
+      {tab === 'history' && (
+        <section className="card">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1rem' }}>
+            <h2 className="card-title" style={{ margin: 0 }}>
+              📁 Service History ({history.length})
+            </h2>
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              {/* Summary chips */}
+              <span style={{
+                padding: '0.3rem 0.75rem', borderRadius: 20, fontSize: '0.8rem', fontWeight: 600,
+                background: '#dcfce7', color: '#059669', border: '1px solid #bbf7d0',
+              }}>
+                ✅ {completedCount} Completed
+              </span>
+              <span style={{
+                padding: '0.3rem 0.75rem', borderRadius: 20, fontSize: '0.8rem', fontWeight: 600,
+                background: '#fee2e2', color: '#dc2626', border: '1px solid #fecaca',
+              }}>
+                🚫 {fakeCount} Fake
+              </span>
+            </div>
+          </div>
+
+          {/* Filter buttons */}
+          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+            {['all', 'completed', 'fake'].map(f => (
+              <button
+                key={f}
+                onClick={() => setHistoryFilter(f)}
+                style={{
+                  padding: '0.35rem 0.9rem', borderRadius: 20, fontSize: '0.82rem',
+                  fontWeight: historyFilter === f ? 700 : 400,
+                  cursor: 'pointer', border: '1px solid',
+                  borderColor: historyFilter === f
+                    ? (f === 'fake' ? '#dc2626' : f === 'completed' ? '#059669' : '#4f46e5')
+                    : '#e5e7eb',
+                  background: historyFilter === f
+                    ? (f === 'fake' ? '#fee2e2' : f === 'completed' ? '#dcfce7' : '#eef2ff')
+                    : 'white',
+                  color: historyFilter === f
+                    ? (f === 'fake' ? '#dc2626' : f === 'completed' ? '#059669' : '#4f46e5')
+                    : '#718096',
+                }}
+              >
+                {f === 'all' ? '📋 All' : f === 'completed' ? '✅ Completed' : '🚫 Fake'}
+              </button>
+            ))}
+          </div>
+
+          {filteredHistory.length === 0 && (
+            <p className="card-desc">No {historyFilter === 'all' ? '' : historyFilter} records yet.</p>
+          )}
+
+          {filteredHistory.map(record => (
+            <HistoryCard key={record.id} record={record} />
+          ))}
+        </section>
       )}
 
       <style>{`

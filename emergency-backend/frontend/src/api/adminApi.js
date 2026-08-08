@@ -5,3 +5,4 @@ export const getAllUsers = () => api.get('/admin/all-users');
 export const getAllAmbulances = () => api.get('/admin/all-ambulances');
 export const getAllRequests = () => api.get('/admin/all-requests');
 export const getDashboardMap = () => api.get('/admin/dashboard-map');
+export const getHistory = () => api.get('/admin/history');

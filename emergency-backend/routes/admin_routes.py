@@ -87,8 +87,8 @@ def dashboard_map():
         ambulance_colors = {}  # Map ambulance_id to color
         
         for req in requests:
-            # Skip completed requests from map (but keep in list)
-            if req.get('status') == 'completed':
+            # Skip completed and fake requests from map (no navigation route for fake requests)
+            if req.get('status') in ('completed', 'fake'):
                 continue
                 
             r = {
@@ -131,5 +131,51 @@ def dashboard_map():
                 ]
             out.append(r)
         return jsonify({'requests': out, 'count': len(out)}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@admin_bp.route('/history', methods=['GET'])
+@jwt_required()
+@role_required('admin')
+def history():
+    """
+    Returns all completed and fake requests for admin reference.
+    Each record includes the ambulance details, hospital, and reason (completed/fake).
+    """
+    try:
+        from datetime import datetime
+        all_reqs = list(admin_bp.db.requests.find(
+            {'status': {'$in': ['completed', 'fake']}},
+            sort=[('updated_at', -1), ('created_at', -1)]
+        ))
+        out = []
+        for req in all_reqs:
+            r = {
+                'id': str(req['_id']),
+                'status': req.get('status'),
+                'location': req.get('location'),
+                'selected_hospital': req.get('selected_hospital'),
+                'created_at': req.get('created_at').isoformat() if req.get('created_at') else None,
+                'updated_at': req.get('updated_at').isoformat() if req.get('updated_at') else None,
+                'ambulance': None,
+                'user': None,
+            }
+            # Attach user info
+            if req.get('user_id'):
+                from models.user_model import UserModel
+                user = UserModel.find_by_id(admin_bp.db, str(req['user_id']))
+                if user:
+                    r['user'] = {'name': user.get('name'), 'phone': user.get('phone'), 'demerit_points': user.get('demerit_points', 0)}
+            # Attach ambulance info
+            if req.get('assigned_ambulance_id'):
+                amb = AmbulanceModel.find_by_id(admin_bp.db, str(req['assigned_ambulance_id']))
+                if amb:
+                    r['ambulance'] = {
+                        'name': amb.get('name'),
+                        'phone': amb.get('phone'),
+                        'vehicle_number': amb.get('vehicle_number'),
+                    }
+            out.append(r)
+        return jsonify({'history': out, 'count': len(out)}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
