@@ -453,8 +453,20 @@ input, select, textarea {
   margin: 1rem 0;
 }
 
-.hospital-picker .hospital-btn {
+.hospital-picker .hospital-btn,
+.hospital-btn {
   margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(79,70,229,0.25), 0 8px 24px rgba(0,0,0,0.06); }
+  50%       { box-shadow: 0 0 0 6px rgba(79,70,229,0.4),  0 8px 24px rgba(0,0,0,0.12); }
+}
+.card--highlight {
+  animation: pulseGlow 2s ease-in-out infinite;
 }
 
 .portal-link {
