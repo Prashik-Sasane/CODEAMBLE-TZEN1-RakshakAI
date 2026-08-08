@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import * as userApi from '../../api/userApi';
 import { MapPicker, TrackingMap } from '../../components/LeafletMap';
 import { sensorService } from '../../services/sensorService';
+import EmergencyChatbot from '../../components/EmergencyChatbot';
 
 /* ── Cancel Confirmation Modal ────────────────────────── */
 function CancelModal({ onConfirm, onClose, cancelCount, isCancelling }) {
@@ -452,6 +453,9 @@ export default function UserDashboard() {
       <footer className="page-footer">
         <Link to="/user/profile">Edit Profile</Link>
       </footer>
+
+      {/* ── Emergency AI Chatbot ── */}
+      <EmergencyChatbot />
 
       <style>{`
         @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
