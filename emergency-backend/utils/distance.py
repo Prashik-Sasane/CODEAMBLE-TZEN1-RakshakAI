@@ -22,22 +22,27 @@ def ambulances_sorted_by_distance(ambulances, target_lat, target_lng):
 
 def find_nearest_ambulance(ambulances, target_lat, target_lng, prefer_active=True, requested_type=None):
     """
-    Prefer nearest ACTIVE ambulance; if none active, return nearest any.
+    Returns the nearest ACTIVE ambulance only.
+    Inactive ambulances are NEVER assigned regardless of prefer_active flag.
     ambulances: list of docs with current_location and status.
-    requested_type: 'any', 'basic_life', 'advance_life', 'icu_life' - filters by ambulance_type
+    requested_type: 'any', 'basic_life', 'advance_life', 'icu_life' - filters by ambulance_type.
+    Returns None if no active ambulance is available.
     """
     sorted_list = ambulances_sorted_by_distance(ambulances, target_lat, target_lng)
     if not sorted_list:
         return None
-    
-    # Filter by requested type if specified
+
+    # ── HARD FILTER: only consider active ambulances ──────────
+    active_only = [(d, amb) for d, amb in sorted_list if amb.get('status') == 'active']
+    if not active_only:
+        return None  # No active ambulance available — do NOT assign an inactive one
+
+    # Filter by requested ambulance type (within active pool)
     if requested_type and requested_type != 'any':
-        matching = [(d, amb) for d, amb in sorted_list if amb.get('ambulance_type') == requested_type]
-        if matching:
-            sorted_list = matching
-    
-    if prefer_active:
-        for _d, amb in sorted_list:
-            if amb.get('status') == 'active':
-                return amb
-    return sorted_list[0][1] if sorted_list else None
+        type_matched = [(d, amb) for d, amb in active_only if amb.get('ambulance_type') == requested_type]
+        if type_matched:
+            active_only = type_matched
+        # If no type match, fall back to any active ambulance
+
+    # Return the nearest active ambulance
+    return active_only[0][1]
