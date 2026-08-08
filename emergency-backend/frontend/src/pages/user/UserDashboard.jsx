@@ -33,8 +33,8 @@ export default function UserDashboard() {
   // Check for new assignment and play alarm
   const prevRequestRef = useRef(null);
   useEffect(() => {
-    if (request?.assigned_ambulance && request.status === 'assigned' && 
-        (!prevRequestRef.current?.assigned_ambulance || prevRequestRef.current?.status !== 'assigned')) {
+    if (request?.assigned_ambulance && request.status === 'assigned' &&
+      (!prevRequestRef.current?.assigned_ambulance || prevRequestRef.current?.status !== 'assigned')) {
       playAlarmSound();
     }
     prevRequestRef.current = request;
@@ -118,23 +118,31 @@ export default function UserDashboard() {
     }
   };
 
+  const vibrate = (pattern = [200, 100, 200, 100, 400]) => {
+    if (navigator.vibrate) navigator.vibrate(pattern);
+  };
+
   const playAlarmSound = () => {
+    // Vibrate device
+    vibrate();
     // Create a simple alarm sound using Web Audio API
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-    
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    
-    oscillator.frequency.value = 800; // High frequency for alarm
-    oscillator.type = 'sine';
-    
-    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 3);
-    
-    oscillator.start(audioContext.currentTime);
-    oscillator.stop(audioContext.currentTime + 3);
+    try {
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      oscillator.frequency.value = 800; // High frequency for alarm
+      oscillator.type = 'sine';
+
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 3);
+
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 3);
+    } catch (_) { }
   };
 
   return (

@@ -6,7 +6,7 @@ export async function fetchNearbyHospitals(lat, lng, radiusM = 5000) {
     node["amenity"="hospital"](around:${radiusM},${lat},${lng});
     way["amenity"="hospital"](around:${radiusM},${lat},${lng});
     node["healthcare"="hospital"](around:${radiusM},${lat},${lng});
-  );out center ${radiusM};`;
+  );out center;`;
   try {
     const res = await fetch(OVERPASS, {
       method: 'POST',
