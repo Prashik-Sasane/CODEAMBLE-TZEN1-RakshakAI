@@ -40,6 +40,7 @@ def verify_otp():
         data = request.get_json() or {}
         phone = data.get('phone')
         otp = data.get('otp')
+        print(f"DEBUG: verify_otp request received - phone: {repr(phone)}, otp: {repr(otp)}, role: ambulance")
         if not phone or not otp:
             return jsonify({'error': 'Phone number and OTP are required'}), 400
         if not OTPModel.verify_otp(ambulance_bp.db, phone, otp, role='ambulance'):
