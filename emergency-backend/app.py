@@ -13,6 +13,7 @@ from routes.user_routes import init_user_routes
 from routes.ambulance_routes import init_ambulance_routes
 from routes.admin_routes import init_admin_routes
 from routes.sensor_routes import init_sensor_routes
+from routes.hospitals_routes import init_hospitals_routes
 from models.otp_model import OTPModel
 
 app = Flask(__name__)
@@ -33,6 +34,7 @@ init_user_routes(app, mongo.db)
 init_ambulance_routes(app, mongo.db)
 init_admin_routes(app, mongo.db)
 init_sensor_routes(app, mongo.db)
+init_hospitals_routes(app)
 
 @app.route('/', methods=['GET'])
 def health_check():

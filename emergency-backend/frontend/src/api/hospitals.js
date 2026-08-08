@@ -1,39 +1,17 @@
-/** Overpass API - fetch hospitals near a point (free, no key) */
-const OVERPASS = 'https://overpass-api.de/api/interpreter';
+/**
+ * Fetch nearby hospitals via the backend proxy (/hospitals/nearby).
+ * The backend calls Overpass, avoiding browser-side IP blocking/rate-limits.
+ */
+import api from './client';
 
-export async function fetchNearbyHospitals(lat, lng, radiusM = 5000) {
-  const query = `[out:json];(
-    node["amenity"="hospital"](around:${radiusM},${lat},${lng});
-    way["amenity"="hospital"](around:${radiusM},${lat},${lng});
-    node["healthcare"="hospital"](around:${radiusM},${lat},${lng});
-  );out center;`;
+export async function fetchNearbyHospitals(lat, lng, radiusM = 10000) {
   try {
-    const res = await fetch(OVERPASS, {
-      method: 'POST',
-      body: query,
-      headers: { 'Content-Type': 'text/plain' },
+    const { data } = await api.get('/hospitals/nearby', {
+      params: { lat, lng, radius: radiusM },
     });
-    const data = await res.json();
-    const out = [];
-    const seen = new Set();
-    (data.elements || []).forEach((el) => {
-      const center = el.center || el;
-      const plat = center.lat;
-      const plng = center.lon || center.lng;
-      const name = el.tags?.name || 'Hospital';
-      const key = `${plat},${plng}`;
-      if (plat && plng && !seen.has(key)) {
-        seen.add(key);
-        out.push({ name, lat: plat, lng: plng });
-      }
-    });
-    return out.sort((a, b) => {
-      const d1 = Math.hypot(a.lat - lat, a.lng - lng);
-      const d2 = Math.hypot(b.lat - lat, b.lng - lng);
-      return d1 - d2;
-    }).slice(0, 10);
+    return data.hospitals || [];
   } catch (e) {
-    console.warn('Overpass fetch failed:', e);
+    console.warn('Hospital fetch failed:', e?.response?.data || e.message);
     return [];
   }
 }

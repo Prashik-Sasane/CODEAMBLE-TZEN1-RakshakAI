@@ -76,6 +76,8 @@ export default function AmbulanceDashboard() {
   const [hospitals, setHospitals] = useState([]);
   const [hospitalsLoading, setHospitalsLoading] = useState(false);
   const [hospitalsError, setHospitalsError] = useState('');
+  const [manualHospital, setManualHospital] = useState({ name: '', lat: '', lng: '' });
+  const [showManualForm, setShowManualForm] = useState(false);
 
   const [routeToUser, setRouteToUser] = useState([]);
   const prevAssignedId = useRef(null);
@@ -364,16 +366,17 @@ export default function AmbulanceDashboard() {
               background: '#f8f9fa', borderRadius: 12, padding: '1rem', marginBottom: '0.75rem',
               border: '1px solid #e5e7eb',
             }}>
-              <p style={{ fontWeight: 600, marginBottom: '0.5rem' }}>
-                🏥 Select a Hospital ({hospitals.length} found nearby)
+              <p style={{ fontWeight: 700, marginBottom: '0.5rem', fontSize: '1rem' }}>
+                🏥 Select a Hospital
+                {hospitals.length > 0 && <span style={{ fontWeight: 400, fontSize: '0.85rem', color: '#6b7280', marginLeft: 6 }}>({hospitals.length} found nearby)</span>}
               </p>
+
               {hospitalsError && (
                 <p style={{ color: '#d97706', fontSize: '0.85rem', marginBottom: '0.5rem' }}>{hospitalsError}</p>
               )}
-              {hospitals.length === 0 && !hospitalsError && (
-                <p style={{ color: '#718096', fontSize: '0.85rem' }}>Searching for hospitals…</p>
-              )}
-              {hospitals.map((h, i) => {
+
+              {/* List from Overpass */}
+              {hospitals.length > 0 && hospitals.map((h, i) => {
                 const d = haversineKm(assigned.accident_location, h);
                 return (
                   <button
@@ -382,17 +385,79 @@ export default function AmbulanceDashboard() {
                     className="btn btn-secondary hospital-btn"
                     onClick={() => handleSelectHospital(h)}
                     disabled={loading}
-                    style={{ marginBottom: '0.5rem', textAlign: 'left' }}
+                    style={{ marginBottom: '0.5rem', textAlign: 'left', width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                   >
-                    <span style={{ flex: 1 }}>{h.name}</span>
-                    {d !== null && <span style={{ color: '#718096', fontSize: '0.8rem', marginLeft: 8 }}>{d.toFixed(1)} km</span>}
+                    <span>{h.name}</span>
+                    {d !== null && <span style={{ color: '#718096', fontSize: '0.8rem', marginLeft: 8, flexShrink: 0 }}>{d.toFixed(1)} km</span>}
                   </button>
                 );
               })}
+
+              {/* Manual entry toggle */}
+              {!showManualForm && (
+                <button
+                  className="btn btn-ghost"
+                  style={{ width: '100%', marginTop: '0.25rem', fontSize: '0.85rem', borderStyle: 'dashed', borderColor: '#9ca3af', color: '#374151' }}
+                  onClick={() => setShowManualForm(true)}
+                >
+                  ✏️ Enter Hospital Manually
+                </button>
+              )}
+
+              {/* Manual entry form */}
+              {showManualForm && (
+                <div style={{ marginTop: '0.75rem', background: '#fff', borderRadius: 8, padding: '0.75rem', border: '1px solid #d1d5db' }}>
+                  <p style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.5rem' }}>Enter Hospital Details</p>
+                  <input
+                    type="text"
+                    placeholder="Hospital Name *"
+                    value={manualHospital.name}
+                    onChange={(e) => setManualHospital(prev => ({ ...prev, name: e.target.value }))}
+                    style={{ width: '100%', padding: '0.45rem 0.65rem', borderRadius: 6, border: '1px solid #d1d5db', fontSize: '0.9rem', marginBottom: '0.4rem', boxSizing: 'border-box' }}
+                  />
+                  <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.5rem' }}>
+                    <input
+                      type="number"
+                      placeholder="Latitude (optional)"
+                      value={manualHospital.lat}
+                      onChange={(e) => setManualHospital(prev => ({ ...prev, lat: e.target.value }))}
+                      style={{ flex: 1, padding: '0.45rem 0.65rem', borderRadius: 6, border: '1px solid #d1d5db', fontSize: '0.85rem' }}
+                    />
+                    <input
+                      type="number"
+                      placeholder="Longitude (optional)"
+                      value={manualHospital.lng}
+                      onChange={(e) => setManualHospital(prev => ({ ...prev, lng: e.target.value }))}
+                      style={{ flex: 1, padding: '0.45rem 0.65rem', borderRadius: 6, border: '1px solid #d1d5db', fontSize: '0.85rem' }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.4rem' }}>
+                    <button
+                      className="btn btn-primary"
+                      style={{ flex: 1, fontSize: '0.875rem' }}
+                      disabled={!manualHospital.name.trim() || loading}
+                      onClick={() => {
+                        const h = {
+                          name: manualHospital.name.trim(),
+                          lat: parseFloat(manualHospital.lat) || assigned.accident_location?.lat || 0,
+                          lng: parseFloat(manualHospital.lng) || assigned.accident_location?.lng || 0,
+                        };
+                        handleSelectHospital(h);
+                        setShowManualForm(false);
+                        setManualHospital({ name: '', lat: '', lng: '' });
+                      }}
+                    >
+                      ✅ Confirm Hospital
+                    </button>
+                    <button className="btn btn-ghost" style={{ fontSize: '0.875rem' }} onClick={() => setShowManualForm(false)}>Cancel</button>
+                  </div>
+                </div>
+              )}
+
               <button
                 className="btn btn-ghost"
-                style={{ width: 'auto', marginTop: '0.25rem', fontSize: '0.85rem' }}
-                onClick={() => setShowHospitalPicker(false)}
+                style={{ width: 'auto', marginTop: '0.5rem', fontSize: '0.85rem', color: '#9ca3af' }}
+                onClick={() => { setShowHospitalPicker(false); setShowManualForm(false); setManualHospital({ name: '', lat: '', lng: '' }); }}
               >
                 ✕ Cancel
               </button>
