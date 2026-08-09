@@ -672,21 +672,26 @@ export default function AmbulanceProfile() {
         .rak-card-top h2 {
           margin: 0;
 
-          font-size: 17px;
-
+          font-size: 26px;
           font-weight: 900;
+          line-height: 1.2;
+          color: #0f172a;
         }
 
 
         .rak-card-top p {
           margin:
-            5px 0 0;
+            8px 0 0;
 
           color: #64748b;
 
-          font-size: 11px;
+          font-size: 15px;
 
-          line-height: 1.5;
+          line-height: 1.6;
+          font-weight: 500;
+
+          max-width: 650px;
+
         }
 
 
