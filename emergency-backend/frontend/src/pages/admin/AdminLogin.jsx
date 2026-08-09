@@ -22,10 +22,6 @@ export default function AdminLogin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // =====================================================
-  // EXISTING ADMIN BACKEND LOGIC — UNCHANGED
-  // =====================================================
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
