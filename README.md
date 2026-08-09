@@ -1,4 +1,3 @@
-#CODEAMBLE-TZEN1-RakshakAI
 # 🚨 RAKSHAK AI — Emergency Response System (ERS)
 
 [![Python](https://img.shields.io/badge/Backend-Flask%203.0-blue?style=for-the-badge&logo=flask)](https://flask.palletsprojects.com/)

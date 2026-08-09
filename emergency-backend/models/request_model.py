@@ -129,14 +129,25 @@ class RequestModel:
     @staticmethod
     def assign_nearest_pending_to_ambulance(db, ambulance):
         """
-        When an ambulance becomes active, assign it to the nearest pending request (if any).
+        When an ambulance becomes active or updates location, assign it to the nearest pending request (if any).
         Matches ambulance type if requested. Returns the assigned request document or None if nothing was assigned.
         """
         if not ambulance:
             return None
 
+        if ambulance.get('status') != 'active':
+            return None
+
         amb_loc = (ambulance.get('current_location') or {})
         if amb_loc.get('lat') is None or amb_loc.get('lng') is None:
+            return None
+
+        # Do not assign if ambulance already has an active assignment
+        existing = db.requests.find_one({
+            'assigned_ambulance_id': ObjectId(ambulance['_id']),
+            'status': {'$in': ['assigned', 'to_hospital']}
+        })
+        if existing:
             return None
 
         amb_type = ambulance.get('ambulance_type', 'any')
@@ -169,6 +180,31 @@ class RequestModel:
 
         assigned = RequestModel.assign_ambulance(db, str(nearest_req['_id']), str(ambulance['_id']), send_notification=True)
         return assigned
+
+    @staticmethod
+    def try_auto_assign_pending_request(db, request_id):
+        """
+        Attempt to auto-assign a specific pending request to the nearest available active ambulance.
+        Returns assigned request doc if assigned, or None.
+        """
+        from models.ambulance_model import AmbulanceModel
+        from utils.distance import find_nearest_ambulance
+
+        req = db.requests.find_one({'_id': ObjectId(request_id), 'status': 'pending'})
+        if not req:
+            return None
+
+        loc = req.get('location') or {}
+        lat, lng = loc.get('lat'), loc.get('lng')
+        if lat is None or lng is None:
+            return None
+
+        requested_type = req.get('requested_ambulance_type', 'any')
+        ambulances = AmbulanceModel.get_all_with_location(db, exclude_assigned=True)
+        nearest = find_nearest_ambulance(ambulances, float(lat), float(lng), prefer_active=True, requested_type=requested_type)
+        if nearest:
+            return RequestModel.assign_ambulance(db, str(req['_id']), str(nearest['_id']), send_notification=True)
+        return None
 
 
 class LocationTrackModel:

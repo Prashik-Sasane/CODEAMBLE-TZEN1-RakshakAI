@@ -180,7 +180,7 @@ def update_location():
         lat, lng = float(lat), float(lng)
         
         # Update location for THIS specific ambulance only
-        AmbulanceModel.update_location(ambulance_bp.db, ambulance_id, lat, lng)
+        updated_amb = AmbulanceModel.update_location(ambulance_bp.db, ambulance_id, lat, lng)
         
         # Log to track if has active assignment
         assigned = list(ambulance_bp.db.requests.find({
@@ -189,6 +189,11 @@ def update_location():
         }).limit(1))
         if assigned:
             LocationTrackModel.add(ambulance_bp.db, str(assigned[0]['_id']), ambulance_id, lat, lng)
+        elif ambulance.get('status') == 'active':
+            try:
+                RequestModel.assign_nearest_pending_to_ambulance(ambulance_bp.db, updated_amb or ambulance)
+            except Exception:
+                pass
         
         return jsonify({'message': 'Location updated successfully'}), 200
     except Exception as e:

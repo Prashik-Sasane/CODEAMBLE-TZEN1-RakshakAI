@@ -182,6 +182,13 @@ def my_request():
     try:
         user_id = get_jwt_identity()
         req = RequestModel.get_active_for_user(user_bp.db, user_id)
+        if req and req.get('status') == 'pending':
+            try:
+                assigned_doc = RequestModel.try_auto_assign_pending_request(user_bp.db, str(req['_id']))
+                if assigned_doc:
+                    req = assigned_doc
+            except Exception:
+                pass
         out = _serialize_request(req, user_bp.db)
         if not out:
             return jsonify({'request': None, 'message': 'No active request'}), 200
