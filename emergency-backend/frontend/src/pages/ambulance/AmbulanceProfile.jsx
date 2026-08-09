@@ -15,7 +15,6 @@ export default function AmbulanceProfile() {
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [message, setMessage] = useState('');
 
-  // Validation states
   const [touched, setTouched] = useState({
     age: false,
     dob: false,
@@ -25,8 +24,7 @@ export default function AmbulanceProfile() {
 
   /* =====================================================
      LOAD EXISTING PROFILE
-     Backend logic unchanged
-  ===================================================== */
+     ===================================================== */
 
   useEffect(() => {
     (async () => {
@@ -40,23 +38,18 @@ export default function AmbulanceProfile() {
 
         setDob(
           a.date_of_birth
-            ? (
-                typeof a.date_of_birth === 'string'
-                  ? a.date_of_birth.slice(0, 10)
-                  : new Date(a.date_of_birth)
-                      .toISOString()
-                      .slice(0, 10)
-              )
+            ? typeof a.date_of_birth === 'string'
+              ? a.date_of_birth.slice(0, 10)
+              : new Date(a.date_of_birth)
+                  .toISOString()
+                  .slice(0, 10)
             : ''
         );
 
         setGender(a.gender || '');
         setVehicleNumber(a.vehicle_number || '');
         setDrivingLicense(a.driving_license || '');
-        setAmbulanceType(
-          a.ambulance_type || 'any'
-        );
-
+        setAmbulanceType(a.ambulance_type || 'any');
       } catch {
         setMessage('Could not load profile');
       } finally {
@@ -65,10 +58,9 @@ export default function AmbulanceProfile() {
     })();
   }, []);
 
-
   /* =====================================================
      AGE CALCULATION
-  ===================================================== */
+     ===================================================== */
 
   const calculateAgeFromDob = (dateString) => {
     if (!dateString) return null;
@@ -82,12 +74,10 @@ export default function AmbulanceProfile() {
     const today = new Date();
 
     let calculatedAge =
-      today.getFullYear() -
-      birthDate.getFullYear();
+      today.getFullYear() - birthDate.getFullYear();
 
     const monthDifference =
-      today.getMonth() -
-      birthDate.getMonth();
+      today.getMonth() - birthDate.getMonth();
 
     if (
       monthDifference < 0 ||
@@ -102,10 +92,9 @@ export default function AmbulanceProfile() {
     return calculatedAge;
   };
 
-
   /* =====================================================
      DOB VALIDATION
-  ===================================================== */
+     ===================================================== */
 
   const getDobError = () => {
     if (!dob) {
@@ -124,8 +113,7 @@ export default function AmbulanceProfile() {
       return 'Date of birth cannot be in the future';
     }
 
-    const calculatedAge =
-      calculateAgeFromDob(dob);
+    const calculatedAge = calculateAgeFromDob(dob);
 
     if (calculatedAge === null) {
       return 'Invalid date of birth';
@@ -142,18 +130,16 @@ export default function AmbulanceProfile() {
     return '';
   };
 
-
   /* =====================================================
      AGE VALIDATION
-  ===================================================== */
+     ===================================================== */
 
   const getAgeError = () => {
     if (!age) {
       return 'Age is required';
     }
 
-    const numericAge =
-      Number(age);
+    const numericAge = Number(age);
 
     if (
       !Number.isInteger(numericAge) ||
@@ -164,8 +150,7 @@ export default function AmbulanceProfile() {
     }
 
     if (dob) {
-      const calculatedAge =
-        calculateAgeFromDob(dob);
+      const calculatedAge = calculateAgeFromDob(dob);
 
       if (
         calculatedAge !== null &&
@@ -178,21 +163,9 @@ export default function AmbulanceProfile() {
     return '';
   };
 
-
   /* =====================================================
      DRIVING LICENSE VALIDATION
-     
-     Example Indian-style format:
-     MH1420110012345
-
-     After removing spaces/hyphens:
-     2 letters
-     2 RTO digits
-     4 year digits
-     7 serial digits
-
-     Total = 15 characters
-  ===================================================== */
+     ===================================================== */
 
   const normalizeLicense = (value) => {
     return value
@@ -200,23 +173,18 @@ export default function AmbulanceProfile() {
       .replace(/[\s-]/g, '');
   };
 
-
   const getDrivingLicenseError = () => {
     if (!drivingLicense) {
       return 'Driving license number is required';
     }
 
-    const normalized =
-      normalizeLicense(drivingLicense);
+    const normalized = normalizeLicense(drivingLicense);
 
     /*
-      Indian-style DL:
-      XX00YYYY0000000
+      Frontend format validation.
 
-      XX = State code
-      00 = RTO
-      YYYY = issue year
-      0000000 = serial
+      Example:
+      MH1420110012345
     */
 
     const licenseRegex =
@@ -224,18 +192,16 @@ export default function AmbulanceProfile() {
 
     if (!licenseRegex.test(normalized)) {
       return (
-        'Enter a valid driving license format '
-        + '(e.g. MH1420110012345)'
+        'Enter a valid driving license format ' +
+        '(e.g. MH1420110012345)'
       );
     }
 
-    const year =
-      Number(
-        normalized.substring(4, 8)
-      );
+    const year = Number(
+      normalized.substring(4, 8)
+    );
 
-    const currentYear =
-      new Date().getFullYear();
+    const currentYear = new Date().getFullYear();
 
     if (
       year < 1950 ||
@@ -247,66 +213,46 @@ export default function AmbulanceProfile() {
     return '';
   };
 
-
   /* =====================================================
      VEHICLE NUMBER VALIDATION
-  ===================================================== */
+     ===================================================== */
 
   const getVehicleError = () => {
     if (!vehicleNumber.trim()) {
       return 'Vehicle number is required';
     }
 
-    const normalized =
-      vehicleNumber
-        .toUpperCase()
-        .replace(/[\s-]/g, '');
-
-    /*
-      Maharashtra / Indian style examples:
-
-      MH12AB1234
-      MH12QR1180
-    */
+    const normalized = vehicleNumber
+      .toUpperCase()
+      .replace(/[\s-]/g, '');
 
     const vehicleRegex =
       /^[A-Z]{2}[0-9]{1,2}[A-Z]{1,3}[0-9]{1,4}$/;
 
     if (!vehicleRegex.test(normalized)) {
       return (
-        'Enter a valid vehicle number '
-        + '(e.g. MH12AB1234)'
+        'Enter a valid vehicle number ' +
+        '(e.g. MH12AB1234)'
       );
     }
 
     return '';
   };
 
-
   /* =====================================================
      VALIDATION RESULTS
-  ===================================================== */
+     ===================================================== */
 
-  const ageError =
-    getAgeError();
-
-  const dobError =
-    getDobError();
-
-  const licenseError =
-    getDrivingLicenseError();
-
-  const vehicleError =
-    getVehicleError();
-
+  const ageError = getAgeError();
+  const dobError = getDobError();
+  const licenseError = getDrivingLicenseError();
+  const vehicleError = getVehicleError();
 
   const ageValid =
-    touched.age &&
-    !ageError;
+    touched.age && !ageError;
 
   const dobValid =
-    touched.dob &&
-    !dobError;
+    touched.dob && !dobError;
 
   const licenseValid =
     touched.drivingLicense &&
@@ -316,10 +262,9 @@ export default function AmbulanceProfile() {
     touched.vehicleNumber &&
     !vehicleError;
 
-
   /* =====================================================
-     FINAL FORM VALIDATION
-  ===================================================== */
+     FORM VALIDATION
+     ===================================================== */
 
   const validateForm = () => {
     setTouched({
@@ -359,20 +304,12 @@ export default function AmbulanceProfile() {
       return false;
     }
 
-    if (!ambulanceType) {
-      setMessage('Please select ambulance type');
-      return false;
-    }
-
     return true;
   };
 
-
   /* =====================================================
      SUBMIT
-     
-     Backend payload remains unchanged.
-  ===================================================== */
+     ===================================================== */
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -386,41 +323,20 @@ export default function AmbulanceProfile() {
     setLoading(true);
 
     try {
-
-      /*
-        IMPORTANT:
-        SAME BACKEND API
-        SAME FIELDS
-        SAME VALUES
-      */
-
       await ambulanceApi.updateProfile({
         name,
-        age: age
-          ? parseInt(age, 10)
-          : undefined,
-
-        date_of_birth:
-          dob || undefined,
-
-        gender:
-          gender || undefined,
-
-        vehicle_number:
-          vehicleNumber,
-
-        driving_license:
-          normalizeLicense(drivingLicense),
-
-        ambulance_type:
-          ambulanceType,
+        age: age ? parseInt(age, 10) : undefined,
+        date_of_birth: dob || undefined,
+        gender: gender || undefined,
+        vehicle_number: vehicleNumber,
+        driving_license: normalizeLicense(drivingLicense),
+        ambulance_type: ambulanceType,
       });
 
       setMessage(
         'Profile updated successfully'
       );
 
-      // Existing redirect logic preserved
       if (
         name &&
         age &&
@@ -434,43 +350,30 @@ export default function AmbulanceProfile() {
             '/ambulance/dashboard';
         }, 1000);
       }
-
     } catch (err) {
-
       setMessage(
         err.response?.data?.error ||
         'Update failed'
       );
-
     } finally {
       setLoading(false);
     }
   };
 
-
   /* =====================================================
      LOADING
-  ===================================================== */
+     ===================================================== */
 
   if (loadingProfile) {
     return (
       <div className="rak-profile-loading">
-        <div className="rak-spinner"></div>
-
-        <p>
-          Loading your profile…
-        </p>
+        <div className="rak-spinner" />
+        <p>Loading your profile…</p>
       </div>
     );
   }
 
-
-  /* =====================================================
-     UI
-  ===================================================== */
-
   return (
-
     <div className="rak-profile-page">
 
       <style>{`
@@ -479,11 +382,14 @@ export default function AmbulanceProfile() {
           box-sizing: border-box;
         }
 
+        /* ==========================================
+           PAGE
+        ========================================== */
+
         .rak-profile-page {
           min-height: 100vh;
 
-          padding:
-            30px 18px 60px;
+          padding: 35px 20px 60px;
 
           background:
             linear-gradient(
@@ -503,17 +409,14 @@ export default function AmbulanceProfile() {
             sans-serif;
         }
 
-
         /* ==========================================
            HEADER
         ========================================== */
 
         .rak-profile-header {
-          width:
-            min(920px, 100%);
+          width: min(1100px, 100%);
 
-          margin:
-            0 auto 22px;
+          margin: 0 auto 26px;
 
           display: flex;
 
@@ -524,25 +427,23 @@ export default function AmbulanceProfile() {
           gap: 20px;
         }
 
-
         .rak-profile-brand {
           display: flex;
 
           align-items: center;
 
-          gap: 12px;
+          gap: 15px;
         }
 
-
         .rak-profile-logo {
-          width: 46px;
-          height: 46px;
+          width: 54px;
+          height: 54px;
 
           display: grid;
 
           place-items: center;
 
-          border-radius: 14px;
+          border-radius: 16px;
 
           background:
             linear-gradient(
@@ -553,53 +454,52 @@ export default function AmbulanceProfile() {
 
           color: white;
 
-          font-size: 22px;
+          font-size: 26px;
 
           box-shadow:
-            0 10px 25px
-            rgba(37,99,235,.22);
+            0 12px 30px
+            rgba(37, 99, 235, .23);
         }
-
 
         .rak-profile-brand h1 {
           margin: 0;
 
-          font-size: 21px;
+          color: #0f172a;
+
+          font-size: 24px;
+
+          line-height: 1.2;
 
           font-weight: 900;
 
-          letter-spacing:
-            -.035em;
+          letter-spacing: -.035em;
         }
 
-
         .rak-profile-brand p {
-          margin: 3px 0 0;
+          margin: 5px 0 0;
 
           color: #64748b;
 
           font-size: 10px;
 
-          font-weight: 700;
+          font-weight: 800;
 
-          letter-spacing: .04em;
+          letter-spacing: .05em;
         }
-
 
         .rak-dashboard-link {
           display: inline-flex;
 
           align-items: center;
 
-          gap: 7px;
+          gap: 8px;
 
-          padding:
-            10px 14px;
+          padding: 12px 17px;
 
           border:
             1px solid #dbe3ef;
 
-          border-radius: 11px;
+          border-radius: 12px;
 
           background: white;
 
@@ -607,17 +507,15 @@ export default function AmbulanceProfile() {
 
           text-decoration: none;
 
-          font-size: 11px;
+          font-size: 12px;
 
           font-weight: 800;
 
           transition: .2s;
         }
 
-
         .rak-dashboard-link:hover {
-          border-color:
-            #93c5fd;
+          border-color: #93c5fd;
 
           color: #2563eb;
 
@@ -625,14 +523,12 @@ export default function AmbulanceProfile() {
             translateY(-1px);
         }
 
-
         /* ==========================================
-           CARD
+           MAIN CARD
         ========================================== */
 
         .rak-profile-card {
-          width:
-            min(920px, 100%);
+          width: min(1100px, 100%);
 
           margin: 0 auto;
 
@@ -640,22 +536,24 @@ export default function AmbulanceProfile() {
 
           border:
             1px solid
-            rgba(255,255,255,.9);
+            rgba(255, 255, 255, .95);
 
-          border-radius: 25px;
+          border-radius: 27px;
 
           background:
-            rgba(255,255,255,.94);
+            rgba(255, 255, 255, .97);
 
           box-shadow:
-            0 25px 70px
-            rgba(15,23,42,.10);
+            0 25px 75px
+            rgba(15, 23, 42, .11);
         }
 
+        /* ==========================================
+           CARD TOP
+        ========================================== */
 
         .rak-card-top {
-          padding:
-            25px 28px;
+          padding: 34px 42px;
 
           background:
             linear-gradient(
@@ -668,41 +566,44 @@ export default function AmbulanceProfile() {
             1px solid #e8eef7;
         }
 
-
         .rak-card-top h2 {
           margin: 0;
 
-          font-size: 26px;
-          font-weight: 900;
-          line-height: 1.2;
           color: #0f172a;
+
+          font-size: 28px;
+
+          line-height: 1.2;
+
+          font-weight: 900;
+
+          letter-spacing: -.04em;
         }
 
-
         .rak-card-top p {
-          margin:
-            8px 0 0;
+          max-width: 750px;
+
+          margin: 10px 0 0;
 
           color: #64748b;
 
           font-size: 15px;
 
           line-height: 1.6;
+
           font-weight: 500;
-
-          max-width: 650px;
-
         }
-
-
-        .rak-profile-form {
-          padding:
-            28px;
-        }
-
 
         /* ==========================================
-           SECTION
+           FORM
+        ========================================== */
+
+        .rak-profile-form {
+          padding: 40px 42px;
+        }
+
+        /* ==========================================
+           SECTION TITLES
         ========================================== */
 
         .rak-section-title {
@@ -710,35 +611,40 @@ export default function AmbulanceProfile() {
 
           align-items: center;
 
-          gap: 9px;
+          gap: 12px;
 
-          margin:
-            0 0 17px;
+          margin: 0 0 22px;
 
           color: #0f172a;
 
-          font-size: 12px;
+          font-size: 20px;
+
+          line-height: 1.3;
 
           font-weight: 900;
 
-          letter-spacing: .06em;
-
-          text-transform: uppercase;
+          letter-spacing: -.01em;
         }
-
 
         .rak-section-title::before {
           content: '';
 
-          width: 4px;
-          height: 18px;
+          width: 6px;
+
+          height: 25px;
 
           border-radius: 999px;
 
           background:
-            #2563eb;
+            linear-gradient(
+              #2563eb,
+              #60a5fa
+            );
         }
 
+        /* ==========================================
+           FORM GRID
+        ========================================== */
 
         .rak-form-grid {
           display: grid;
@@ -746,26 +652,26 @@ export default function AmbulanceProfile() {
           grid-template-columns:
             1fr 1fr;
 
-          gap:
-            18px 20px;
+          gap: 25px 28px;
 
-          margin-bottom: 28px;
+          margin-bottom: 40px;
         }
-
 
         .rak-form-group {
           display: flex;
 
           flex-direction: column;
 
-          gap: 7px;
+          gap: 10px;
         }
-
 
         .rak-form-group.full {
           grid-column: 1 / -1;
         }
 
+        /* ==========================================
+           LABEL
+        ========================================== */
 
         .rak-form-label {
           display: flex;
@@ -776,41 +682,43 @@ export default function AmbulanceProfile() {
 
           color: #334155;
 
-          font-size: 10px;
+          font-size: 15px;
 
-          font-weight: 850;
+          line-height: 1.4;
 
-          letter-spacing: .03em;
+          font-weight: 800;
+
+          letter-spacing: 0;
         }
-
 
         .rak-required {
           color: #ef4444;
         }
 
+        /* ==========================================
+           INPUTS
+        ========================================== */
 
         .rak-input,
         .rak-select {
           width: 100%;
 
-          height: 47px;
+          height: 56px;
 
-          padding:
-            0 13px;
+          padding: 0 17px;
 
           border:
             1px solid #dbe3ed;
 
-          border-radius: 12px;
+          border-radius: 13px;
 
           outline: none;
 
-          background:
-            #ffffff;
+          background: #ffffff;
 
           color: #0f172a;
 
-          font-size: 12px;
+          font-size: 15px;
 
           font-weight: 600;
 
@@ -820,128 +728,121 @@ export default function AmbulanceProfile() {
             background .18s;
         }
 
-
         .rak-input::placeholder {
-          color: #a0aec0;
+          color: #94a3b8;
+
+          font-size: 14px;
 
           font-weight: 500;
         }
 
-
         .rak-input:focus,
         .rak-select:focus {
-          border-color:
-            #3b82f6;
+          border-color: #3b82f6;
 
           box-shadow:
             0 0 0 4px
-            rgba(59,130,246,.10);
+            rgba(59, 130, 246, .10);
 
           background: white;
         }
 
-
         /* ==========================================
-           VALID / INVALID
+           VALID
         ========================================== */
 
         .rak-input.valid,
         .rak-select.valid {
-          border-color:
-            #22c55e;
+          border-color: #22c55e;
 
-          background:
-            #f0fdf4;
+          background: #f0fdf4;
         }
-
 
         .rak-input.valid:focus,
         .rak-select.valid:focus {
-          border-color:
-            #16a34a;
+          border-color: #16a34a;
 
           box-shadow:
             0 0 0 4px
-            rgba(34,197,94,.10);
+            rgba(34, 197, 94, .10);
         }
 
+        /* ==========================================
+           INVALID
+        ========================================== */
 
         .rak-input.invalid,
         .rak-select.invalid {
-          border-color:
-            #ef4444;
+          border-color: #ef4444;
 
-          background:
-            #fff7f7;
+          background: #fff7f7;
         }
-
 
         .rak-input.invalid:focus,
         .rak-select.invalid:focus {
-          border-color:
-            #dc2626;
+          border-color: #dc2626;
 
           box-shadow:
             0 0 0 4px
-            rgba(239,68,68,.10);
+            rgba(239, 68, 68, .10);
         }
 
+        /* ==========================================
+           FIELD MESSAGES
+        ========================================== */
 
         .rak-field-message {
           display: flex;
 
           align-items: center;
 
-          gap: 5px;
+          gap: 6px;
 
-          margin-top: -2px;
+          margin-top: 0;
 
-          font-size: 9px;
+          font-size: 12px;
 
-          font-weight: 700;
+          font-weight: 750;
 
-          line-height: 1.4;
+          line-height: 1.5;
         }
-
 
         .rak-field-message.error {
           color: #dc2626;
         }
 
-
         .rak-field-message.success {
           color: #16a34a;
         }
 
-
         /* ==========================================
-           LICENSE INFO
+           LICENSE HINT
         ========================================== */
 
         .rak-license-hint {
-          padding:
-            9px 11px;
+          padding: 13px 15px;
 
-          border-radius: 9px;
+          border-radius: 10px;
 
-          background:
-            #f8fafc;
+          background: #f8fafc;
 
           color: #64748b;
 
-          font-size: 9px;
+          font-size: 12px;
 
-          line-height: 1.45;
+          line-height: 1.6;
+
+          font-weight: 500;
         }
-
 
         .rak-license-hint strong {
           color: #334155;
+
+          font-weight: 800;
         }
 
-
         /* ==========================================
-           AMBULANCE TYPES
+           AMBULANCE CONFIGURATION
         ========================================== */
 
         .rak-type-grid {
@@ -950,19 +851,18 @@ export default function AmbulanceProfile() {
           grid-template-columns:
             repeat(4, 1fr);
 
-          gap: 10px;
+          gap: 14px;
         }
 
-
         .rak-type-option {
-          min-height: 82px;
+          min-height: 115px;
 
-          padding: 11px 7px;
+          padding: 17px 10px;
 
           border:
             1px solid #dbe3ed;
 
-          border-radius: 13px;
+          border-radius: 15px;
 
           background: white;
 
@@ -973,113 +873,100 @@ export default function AmbulanceProfile() {
           transition: .18s;
         }
 
-
         .rak-type-option:hover {
-          border-color:
-            #93c5fd;
+          border-color: #93c5fd;
 
           transform:
-            translateY(-1px);
-        }
-
-
-        .rak-type-option.active {
-          border-color:
-            #2563eb;
-
-          background:
-            #eff6ff;
+            translateY(-2px);
 
           box-shadow:
-            inset 0 0 0 1px
-            #2563eb;
+            0 8px 20px
+            rgba(37, 99, 235, .08);
         }
 
+        .rak-type-option.active {
+          border-color: #2563eb;
+
+          background: #eff6ff;
+
+          box-shadow:
+            inset 0 0 0 1px #2563eb;
+        }
 
         .rak-type-icon {
-          font-size: 23px;
+          font-size: 31px;
 
-          margin-bottom: 4px;
+          margin-bottom: 8px;
         }
-
 
         .rak-type-name {
           display: block;
 
           color: #0f172a;
 
-          font-size: 10px;
+          font-size: 14px;
 
           font-weight: 850;
         }
 
-
         .rak-type-desc {
           display: block;
 
-          margin-top: 2px;
+          margin-top: 5px;
 
-          color: #94a3b8;
+          color: #64748b;
 
-          font-size: 8px;
+          font-size: 11px;
         }
-
 
         /* ==========================================
            MESSAGE
         ========================================== */
 
         .rak-message {
-          margin:
-            20px 0;
+          margin: 24px 0 0;
 
-          padding:
-            12px 14px;
+          padding: 14px 16px;
 
           border-radius: 11px;
 
-          font-size: 10px;
+          font-size: 12px;
 
           font-weight: 750;
         }
-
 
         .rak-message.success {
           border:
             1px solid #bbf7d0;
 
-          background:
-            #f0fdf4;
+          background: #f0fdf4;
 
           color: #15803d;
         }
-
 
         .rak-message.error {
           border:
             1px solid #fecaca;
 
-          background:
-            #fef2f2;
+          background: #fef2f2;
 
           color: #dc2626;
         }
 
-
         /* ==========================================
-           SAVE
+           SAVE BUTTON
         ========================================== */
 
         .rak-save-button {
           width: 100%;
 
-          height: 52px;
+          height: 57px;
 
-          margin-top: 25px;
+          margin-top: 28px;
 
           border: none;
 
-          border-radius: 13px;
+          border-radius: 14px;
 
           background:
             linear-gradient(
@@ -1090,7 +977,7 @@ export default function AmbulanceProfile() {
 
           color: white;
 
-          font-size: 12px;
+          font-size: 14px;
 
           font-weight: 900;
 
@@ -1099,22 +986,20 @@ export default function AmbulanceProfile() {
           cursor: pointer;
 
           box-shadow:
-            0 12px 25px
-            rgba(37,99,235,.20);
+            0 12px 27px
+            rgba(37, 99, 235, .20);
 
           transition: .2s;
         }
 
-
         .rak-save-button:hover:not(:disabled) {
           transform:
-            translateY(-1px);
+            translateY(-2px);
 
           box-shadow:
-            0 15px 30px
-            rgba(37,99,235,.26);
+            0 16px 32px
+            rgba(37, 99, 235, .27);
         }
-
 
         .rak-save-button:disabled {
           opacity: .55;
@@ -1122,37 +1007,31 @@ export default function AmbulanceProfile() {
           cursor: not-allowed;
         }
 
-
         /* ==========================================
            FOOTER
         ========================================== */
 
         .rak-profile-footer {
-          width:
-            min(920px, 100%);
+          width: min(1100px, 100%);
 
-          margin:
-            18px auto 0;
+          margin: 20px auto 0;
 
           text-align: center;
         }
 
-
         .rak-profile-footer a {
           color: #64748b;
 
-          font-size: 10px;
+          font-size: 12px;
 
           font-weight: 700;
 
           text-decoration: none;
         }
 
-
         .rak-profile-footer a:hover {
           color: #2563eb;
         }
-
 
         /* ==========================================
            LOADING
@@ -1174,10 +1053,10 @@ export default function AmbulanceProfile() {
           color: #64748b;
         }
 
-
         .rak-spinner {
-          width: 35px;
-          height: 35px;
+          width: 40px;
+
+          height: 40px;
 
           border:
             3px solid #dbeafe;
@@ -1191,21 +1070,29 @@ export default function AmbulanceProfile() {
             rak-spin .8s linear infinite;
         }
 
-
         .rak-profile-loading p {
-          margin-top: 12px;
+          margin-top: 14px;
 
-          font-size: 11px;
+          font-size: 13px;
 
           font-weight: 700;
         }
 
+        @keyframes rak-spin {
+          to {
+            transform: rotate(360deg);
+          }
+        }
 
-        @media (max-width: 700px) {
+        /* ==========================================
+           TABLET
+        ========================================== */
+
+        @media (max-width: 800px) {
 
           .rak-profile-page {
             padding:
-              18px 12px 40px;
+              24px 14px 45px;
           }
 
           .rak-profile-header {
@@ -1213,7 +1100,25 @@ export default function AmbulanceProfile() {
           }
 
           .rak-profile-brand h1 {
-            font-size: 17px;
+            font-size: 20px;
+          }
+
+          .rak-card-top {
+            padding:
+              28px 26px;
+          }
+
+          .rak-card-top h2 {
+            font-size: 24px;
+          }
+
+          .rak-card-top p {
+            font-size: 14px;
+          }
+
+          .rak-profile-form {
+            padding:
+              30px 26px;
           }
 
           .rak-form-grid {
@@ -1228,15 +1133,65 @@ export default function AmbulanceProfile() {
             grid-template-columns:
               repeat(2, 1fr);
           }
+        }
 
-          .rak-profile-form {
-            padding: 19px;
+        /* ==========================================
+           MOBILE
+        ========================================== */
+
+        @media (max-width: 520px) {
+
+          .rak-profile-header {
+            flex-direction: column;
+          }
+
+          .rak-dashboard-link {
+            width: 100%;
+
+            justify-content: center;
           }
 
           .rak-card-top {
-            padding: 20px;
+            padding:
+              24px 19px;
           }
 
+          .rak-card-top h2 {
+            font-size: 21px;
+          }
+
+          .rak-card-top p {
+            font-size: 13px;
+          }
+
+          .rak-profile-form {
+            padding:
+              25px 18px;
+          }
+
+          .rak-section-title {
+            font-size: 18px;
+          }
+
+          .rak-form-label {
+            font-size: 14px;
+          }
+
+          .rak-input,
+          .rak-select {
+            height: 53px;
+
+            font-size: 14px;
+          }
+
+          .rak-type-grid {
+            grid-template-columns:
+              1fr 1fr;
+          }
+
+          .rak-type-option {
+            min-height: 105px;
+          }
         }
 
       `}</style>
@@ -1268,7 +1223,6 @@ export default function AmbulanceProfile() {
 
         </div>
 
-
         <Link
           to="/ambulance/dashboard"
           className="rak-dashboard-link"
@@ -1284,7 +1238,6 @@ export default function AmbulanceProfile() {
       ================================================= */}
 
       <section className="rak-profile-card">
-
 
         <div className="rak-card-top">
 
@@ -1305,7 +1258,6 @@ export default function AmbulanceProfile() {
           onSubmit={handleSubmit}
         >
 
-
           {/* =============================================
               PERSONAL INFORMATION
           ============================================= */}
@@ -1317,8 +1269,7 @@ export default function AmbulanceProfile() {
 
           <div className="rak-form-grid">
 
-
-            {/* NAME */}
+            {/* FULL NAME */}
 
             <div className="rak-form-group full">
 
@@ -1351,8 +1302,14 @@ export default function AmbulanceProfile() {
             <div className="rak-form-group">
 
               <label className="rak-form-label">
-                Age
-                <span className="rak-required">*</span>
+
+                <span>
+                  Age
+                  <span className="rak-required">
+                    {' '}*
+                  </span>
+                </span>
+
               </label>
 
               <input
@@ -1370,12 +1327,10 @@ export default function AmbulanceProfile() {
                 }
                 value={age}
                 onChange={(e) =>
-                  setAge(
-                    e.target.value
-                  )
+                  setAge(e.target.value)
                 }
                 onBlur={() =>
-                  setTouched(prev => ({
+                  setTouched((prev) => ({
                     ...prev,
                     age: true,
                   }))
@@ -1384,22 +1339,16 @@ export default function AmbulanceProfile() {
                 required
               />
 
-
               {touched.age && ageError && (
-
                 <div className="rak-field-message error">
                   ✕ {ageError}
                 </div>
-
               )}
 
-
               {ageValid && (
-
                 <div className="rak-field-message success">
                   ✓ Age is valid
                 </div>
-
               )}
 
             </div>
@@ -1410,8 +1359,14 @@ export default function AmbulanceProfile() {
             <div className="rak-form-group">
 
               <label className="rak-form-label">
-                Date of Birth
-                <span className="rak-required">*</span>
+
+                <span>
+                  Date of Birth
+                  <span className="rak-required">
+                    {' '}*
+                  </span>
+                </span>
+
               </label>
 
               <input
@@ -1427,12 +1382,10 @@ export default function AmbulanceProfile() {
                 }
                 value={dob}
                 onChange={(e) =>
-                  setDob(
-                    e.target.value
-                  )
+                  setDob(e.target.value)
                 }
                 onBlur={() =>
-                  setTouched(prev => ({
+                  setTouched((prev) => ({
                     ...prev,
                     dob: true,
                   }))
@@ -1440,22 +1393,16 @@ export default function AmbulanceProfile() {
                 required
               />
 
-
               {touched.dob && dobError && (
-
                 <div className="rak-field-message error">
                   ✕ {dobError}
                 </div>
-
               )}
 
-
               {dobValid && (
-
                 <div className="rak-field-message success">
                   ✓ DOB and age are compatible
                 </div>
-
               )}
 
             </div>
@@ -1466,17 +1413,21 @@ export default function AmbulanceProfile() {
             <div className="rak-form-group">
 
               <label className="rak-form-label">
-                Gender
-                <span className="rak-required">*</span>
+
+                <span>
+                  Gender
+                  <span className="rak-required">
+                    {' '}*
+                  </span>
+                </span>
+
               </label>
 
               <select
                 className="rak-select"
                 value={gender}
                 onChange={(e) =>
-                  setGender(
-                    e.target.value
-                  )
+                  setGender(e.target.value)
                 }
                 required
               >
@@ -1501,12 +1452,11 @@ export default function AmbulanceProfile() {
 
             </div>
 
-
           </div>
 
 
           {/* =============================================
-              DRIVER DOCUMENTS
+              DRIVER VERIFICATION
           ============================================= */}
 
           <div className="rak-section-title">
@@ -1516,8 +1466,7 @@ export default function AmbulanceProfile() {
 
           <div className="rak-form-grid">
 
-
-            {/* DRIVING LICENSE */}
+            {/* LICENSE */}
 
             <div className="rak-form-group full">
 
@@ -1531,7 +1480,6 @@ export default function AmbulanceProfile() {
                 </span>
 
               </label>
-
 
               <input
                 type="text"
@@ -1555,13 +1503,10 @@ export default function AmbulanceProfile() {
                         ''
                       );
 
-                  setDrivingLicense(
-                    value
-                  );
-
+                  setDrivingLicense(value);
                 }}
                 onBlur={() =>
-                  setTouched(prev => ({
+                  setTouched((prev) => ({
                     ...prev,
                     drivingLicense: true,
                   }))
@@ -1571,34 +1516,32 @@ export default function AmbulanceProfile() {
                 required
               />
 
-
               {touched.drivingLicense &&
                 licenseError && (
-
                   <div className="rak-field-message error">
                     ✕ {licenseError}
                   </div>
-
                 )}
 
-
               {licenseValid && (
-
                 <div className="rak-field-message success">
                   ✓ License format is valid
                 </div>
-
               )}
-
 
               <div className="rak-license-hint">
 
-                <strong>Format:</strong>{' '}
+                <strong>
+                  Format:
+                </strong>{' '}
+
                 State code + RTO code + year +
                 license number.
 
-                Example:
-                <strong> MH1420110012345</strong>
+                {' '}Example:
+                <strong>
+                  MH1420110012345
+                </strong>
 
               </div>
 
@@ -1620,7 +1563,6 @@ export default function AmbulanceProfile() {
 
               </label>
 
-
               <input
                 type="text"
                 className={
@@ -1635,12 +1577,11 @@ export default function AmbulanceProfile() {
                 value={vehicleNumber}
                 onChange={(e) =>
                   setVehicleNumber(
-                    e.target.value
-                      .toUpperCase()
+                    e.target.value.toUpperCase()
                   )
                 }
                 onBlur={() =>
-                  setTouched(prev => ({
+                  setTouched((prev) => ({
                     ...prev,
                     vehicleNumber: true,
                   }))
@@ -1649,33 +1590,26 @@ export default function AmbulanceProfile() {
                 required
               />
 
-
               {touched.vehicleNumber &&
                 vehicleError && (
-
                   <div className="rak-field-message error">
                     ✕ {vehicleError}
                   </div>
-
                 )}
 
-
               {vehicleValid && (
-
                 <div className="rak-field-message success">
                   ✓ Vehicle number format is valid
                 </div>
-
               )}
 
             </div>
-
 
           </div>
 
 
           {/* =============================================
-              AMBULANCE TYPE
+              AMBULANCE CONFIGURATION
           ============================================= */}
 
           <div className="rak-section-title">
@@ -1685,6 +1619,7 @@ export default function AmbulanceProfile() {
 
           <div className="rak-type-grid">
 
+            {/* ANY */}
 
             <button
               type="button"
@@ -1714,6 +1649,8 @@ export default function AmbulanceProfile() {
 
             </button>
 
+
+            {/* BLS */}
 
             <button
               type="button"
@@ -1746,6 +1683,8 @@ export default function AmbulanceProfile() {
             </button>
 
 
+            {/* ALS */}
+
             <button
               type="button"
               className={
@@ -1776,6 +1715,8 @@ export default function AmbulanceProfile() {
 
             </button>
 
+
+            {/* ICU */}
 
             <button
               type="button"
@@ -1815,7 +1756,6 @@ export default function AmbulanceProfile() {
           ============================================= */}
 
           {message && (
-
             <div
               className={
                 `rak-message ${
@@ -1829,7 +1769,6 @@ export default function AmbulanceProfile() {
             >
               {message}
             </div>
-
           )}
 
 
@@ -1842,15 +1781,19 @@ export default function AmbulanceProfile() {
             className="rak-save-button"
             disabled={loading}
           >
-
             {loading
               ? 'Saving Profile…'
               : '✓ Save & Continue'}
-
           </button>
+
         </form>
 
       </section>
+
+
+      {/* =================================================
+          FOOTER
+      ================================================= */}
 
       <footer className="rak-profile-footer">
 
