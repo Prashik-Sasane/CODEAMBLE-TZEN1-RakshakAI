@@ -158,9 +158,6 @@ export default function Landing() {
             </a>
 
           </div>
-
-
-
           <div className="nav-right">
 
             <button
@@ -190,23 +187,12 @@ export default function Landing() {
 
       </nav>
 
-
-
-      {/* =====================================================
-          HERO SECTION
-      ===================================================== */}
-
       <main>
 
         <section
           id="hero"
           className="hero-section"
         >
-
-
-          {/* =================================================
-              LEFT SIDE
-          ================================================= */}
 
           <div className="hero-content">
 

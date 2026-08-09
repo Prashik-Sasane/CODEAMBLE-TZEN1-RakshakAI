@@ -29,8 +29,8 @@ def send_otp():
         phone = data.get('phone')
         if not phone:
             return jsonify({'error': 'Phone number is required'}), 400
-        send_otp_logic(ambulance_bp.db, phone, role='ambulance')
-        return jsonify({'message': 'OTP sent successfully'}), 200
+        otp = send_otp_logic(ambulance_bp.db, phone, role='ambulance')
+        return jsonify({'message': 'OTP sent successfully', 'otp': otp}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

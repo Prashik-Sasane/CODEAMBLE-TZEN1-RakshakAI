@@ -21,6 +21,7 @@ export default function AmbulanceLogin() {
 
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
+  const [generatedOtp, setGeneratedOtp] = useState('');
   const [step, setStep] = useState('phone');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -45,7 +46,10 @@ export default function AmbulanceLogin() {
       const payload =
         normalized.length === 10 ? `+91${normalized}` : phone;
 
-      await ambulanceApi.sendOtp(payload);
+      const res = await ambulanceApi.sendOtp(payload);
+      if (res.data?.otp) {
+        setGeneratedOtp(res.data.otp);
+      }
       setStep('otp');
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to send OTP');
@@ -1529,6 +1533,48 @@ export default function AmbulanceLogin() {
                   +91 {phone.replace(/\D/g, '').slice(-10)}
 
                 </div>
+
+                {generatedOtp && (
+                  <div style={{
+                    marginTop: '16px',
+                    padding: '12px 16px',
+                    background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
+                    border: '1px solid #bfdbfe',
+                    borderRadius: '14px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '12px',
+                    boxShadow: '0 4px 12px rgba(37, 99, 235, 0.08)'
+                  }}>
+                    <div>
+                      <div style={{ fontSize: '11px', color: '#1e40af', fontWeight: '800', letterSpacing: '0.05em' }}>
+                        🔑 GENERATED OTP (FROM DATABASE)
+                      </div>
+                      <div style={{ fontSize: '20px', color: '#1d4ed8', fontWeight: '900', letterSpacing: '3px', marginTop: '2px' }}>
+                        {generatedOtp}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setOtp(generatedOtp)}
+                      style={{
+                        padding: '8px 14px',
+                        background: '#2563eb',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '10px',
+                        fontSize: '12px',
+                        fontWeight: '800',
+                        cursor: 'pointer',
+                        boxShadow: '0 4px 10px rgba(37, 99, 235, 0.25)',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      Auto-fill OTP
+                    </button>
+                  </div>
+                )}
 
 
                 <div style={{ marginTop: '25px' }}>
